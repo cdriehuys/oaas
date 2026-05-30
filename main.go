@@ -1,7 +1,26 @@
 package main
 
-import "fmt"
+import (
+	"embed"
+	"io/fs"
+	"net/http"
+)
+
+//go:embed frontend/dist
+var uiFS embed.FS
 
 func main() {
-	fmt.Println("Hello, World!")
+	bareUIFiles, _ := fs.Sub(uiFS, "frontend/dist")
+
+	routes := http.NewServeMux()
+	routes.Handle("/", http.FileServerFS(bareUIFiles))
+
+	server := &http.Server{
+		Addr:    ":8000",
+		Handler: routes,
+	}
+
+	if err := server.ListenAndServe(); err != nil {
+		panic(err)
+	}
 }
