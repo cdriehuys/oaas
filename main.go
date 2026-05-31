@@ -2,6 +2,7 @@ package main
 
 import (
 	"embed"
+	"fmt"
 	"io/fs"
 	"net/http"
 )
@@ -19,6 +20,8 @@ func main() {
 		Addr:    ":8000",
 		Handler: routes,
 	}
+
+	fmt.Printf("Starting server on %q\n", server.Addr)
 
 	if err := server.ListenAndServe(); err != nil {
 		panic(err)
