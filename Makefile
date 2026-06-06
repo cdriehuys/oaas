@@ -8,9 +8,11 @@ HOST_PORT ?= 8000
 run: container
 	docker run --publish $(HOST_PORT):8000 oaas:latest
 
+BUILD_TAGS ?=
+
 .PHONY: build-backend
 build-backend:
-	CGO_ENABLED=0 go build -gcflags="all=-N -l" -o ./build/main .
+	CGO_ENABLED=0 go build -gcflags="all=-N -l" -o ./build/main $(if $(BUILD_TAGS),-tags=$(BUILD_TAGS),) .
 
 .PHONY: dev
 dev:
