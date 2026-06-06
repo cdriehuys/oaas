@@ -1,2 +1,5 @@
 dist
 node_modules
+
+# Auto-generated
+src/client
