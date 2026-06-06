@@ -16,6 +16,7 @@ RUN go mod download
 
 COPY . .
 COPY --from=ui-builder /ui/dist ./frontend/dist
+RUN go generate ./...
 RUN CGO_ENABLED=0 go build -v -o ./bin/oaas
 
 FROM scratch

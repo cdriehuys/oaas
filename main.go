@@ -7,6 +7,8 @@ import (
 	"io/fs"
 	"log"
 	"net/http"
+
+	"github.com/cdriehuys/oaas/api"
 )
 
 //go:embed frontend/dist
@@ -29,8 +31,11 @@ func messageHandler(w http.ResponseWriter, r *http.Request) {
 func main() {
 	bareUIFiles, _ := fs.Sub(uiFS, "frontend/dist")
 
+	apiBaseURL := "/api/v1/"
+	api := api.NewAPI(apiBaseURL)
+
 	routes := http.NewServeMux()
-	routes.HandleFunc("/api/v1/message", messageHandler)
+	routes.Handle(apiBaseURL, api.Routes())
 	routes.Handle("/", http.FileServerFS(bareUIFiles))
 
 	server := &http.Server{

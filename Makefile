@@ -33,3 +33,7 @@ DELVE_OPTS := $(if $(WAIT_FOR_DEBUGGER),,--continue)
 .PHONY: run-backend
 run-backend:
 	dlv exec ./build/main --listen=127.0.0.1:2345 --headless=true --api-version=2 --accept-multiclient $(DELVE_OPTS)
+
+.PHONY: api-server
+api-server:
+	go generate ./api/internal/server
