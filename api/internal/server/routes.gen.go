@@ -13,7 +13,34 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"time"
+
+	"github.com/oapi-codegen/runtime"
 )
+
+// Defines values for TodoState.
+const (
+	Complete   TodoState = "complete"
+	Incomplete TodoState = "incomplete"
+)
+
+// Valid indicates whether the value is a known member of the TodoState enum.
+func (e TodoState) Valid() bool {
+	switch e {
+	case Complete:
+		return true
+	case Incomplete:
+		return true
+	default:
+		return false
+	}
+}
+
+// ErrorMessage defines model for ErrorMessage.
+type ErrorMessage struct {
+	// Message Reason for the error response
+	Message string `json:"message"`
+}
 
 // NewTodo defines model for NewTodo.
 type NewTodo struct {
@@ -23,6 +50,9 @@ type NewTodo struct {
 
 // Todo defines model for Todo.
 type Todo struct {
+	// CompletedAt Instant when the todo was marked as complete
+	CompletedAt *time.Time `json:"completedAt,omitempty"`
+
 	// Id A unique identifier for the todo
 	Id int `json:"id"`
 
@@ -35,8 +65,20 @@ type TodoCollection struct {
 	Items []Todo `json:"items"`
 }
 
+// TodoState A possible state for a todo item
+type TodoState string
+
+// BadRequest defines model for BadRequest.
+type BadRequest = ErrorMessage
+
+// TodoNotFound defines model for TodoNotFound.
+type TodoNotFound = ErrorMessage
+
 // PostTodosJSONRequestBody defines body for PostTodos for application/json ContentType.
 type PostTodosJSONRequestBody = NewTodo
+
+// PutTodosTodoIDStateTextRequestBody defines body for PutTodosTodoIDState for text/plain ContentType.
+type PutTodosTodoIDStateTextRequestBody = TodoState
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
@@ -46,6 +88,9 @@ type ServerInterface interface {
 
 	// (POST /todos)
 	PostTodos(w http.ResponseWriter, r *http.Request)
+
+	// (PUT /todos/{todoID}/state)
+	PutTodosTodoIDState(w http.ResponseWriter, r *http.Request, todoID int)
 }
 
 // ServerInterfaceWrapper converts contexts to parameters.
@@ -76,6 +121,32 @@ func (siw *ServerInterfaceWrapper) PostTodos(w http.ResponseWriter, r *http.Requ
 
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		siw.Handler.PostTodos(w, r)
+	}))
+
+	for _, middleware := range siw.HandlerMiddlewares {
+		handler = middleware(handler)
+	}
+
+	handler.ServeHTTP(w, r)
+}
+
+// PutTodosTodoIDState operation middleware
+func (siw *ServerInterfaceWrapper) PutTodosTodoIDState(w http.ResponseWriter, r *http.Request) {
+
+	var err error
+	_ = err
+
+	// ------------- Path parameter "todoID" -------------
+	var todoID int
+
+	err = runtime.BindStyledParameterWithOptions("simple", "todoID", r.PathValue("todoID"), &todoID, runtime.BindStyledParameterOptions{ParamLocation: runtime.ParamLocationPath, Explode: false, Required: true, Type: "integer", Format: ""})
+	if err != nil {
+		siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "todoID", Err: err})
+		return
+	}
+
+	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		siw.Handler.PutTodosTodoIDState(w, r, todoID)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -207,9 +278,14 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 
 	m.HandleFunc(http.MethodGet+" "+options.BaseURL+"/todos", wrapper.GetTodos)
 	m.HandleFunc(http.MethodPost+" "+options.BaseURL+"/todos", wrapper.PostTodos)
+	m.HandleFunc(http.MethodPut+" "+options.BaseURL+"/todos/{todoID}/state", wrapper.PutTodosTodoIDState)
 
 	return m
 }
+
+type BadRequestJSONResponse ErrorMessage
+
+type TodoNotFoundJSONResponse ErrorMessage
 
 type GetTodosRequestObject struct {
 }
@@ -254,6 +330,57 @@ func (response PostTodos201JSONResponse) VisitPostTodosResponse(w http.ResponseW
 	return err
 }
 
+type PutTodosTodoIDStateRequestObject struct {
+	TodoID int `json:"todoID"`
+	Body   *PutTodosTodoIDStateTextRequestBody
+}
+
+type PutTodosTodoIDStateResponseObject interface {
+	VisitPutTodosTodoIDStateResponse(w http.ResponseWriter) error
+}
+
+type PutTodosTodoIDState200JSONResponse Todo
+
+func (response PutTodosTodoIDState200JSONResponse) VisitPutTodosTodoIDStateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(200)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutTodosTodoIDState400JSONResponse struct{ BadRequestJSONResponse }
+
+func (response PutTodosTodoIDState400JSONResponse) VisitPutTodosTodoIDStateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
+type PutTodosTodoIDState404JSONResponse struct{ TodoNotFoundJSONResponse }
+
+func (response PutTodosTodoIDState404JSONResponse) VisitPutTodosTodoIDStateResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(404)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 // StrictServerInterface represents all server handlers.
 type StrictServerInterface interface {
 
@@ -262,6 +389,9 @@ type StrictServerInterface interface {
 
 	// (POST /todos)
 	PostTodos(ctx context.Context, request PostTodosRequestObject) (PostTodosResponseObject, error)
+
+	// (PUT /todos/{todoID}/state)
+	PutTodosTodoIDState(ctx context.Context, request PutTodosTodoIDStateRequestObject) (PutTodosTodoIDStateResponseObject, error)
 }
 
 type StrictHandlerFunc func(ctx context.Context, w http.ResponseWriter, r *http.Request, request any) (any, error)
@@ -344,6 +474,42 @@ func (sh *strictHandler) PostTodos(w http.ResponseWriter, r *http.Request) {
 		sh.options.ResponseErrorHandlerFunc(w, r, err)
 	} else if validResponse, ok := response.(PostTodosResponseObject); ok {
 		if err := validResponse.VisitPostTodosResponse(w); err != nil {
+			sh.options.ResponseErrorHandlerFunc(w, r, err)
+		}
+	} else if response != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, fmt.Errorf("unexpected response type: %T", response))
+	}
+}
+
+// PutTodosTodoIDState operation middleware
+func (sh *strictHandler) PutTodosTodoIDState(w http.ResponseWriter, r *http.Request, todoID int) {
+	var request PutTodosTodoIDStateRequestObject
+
+	request.TodoID = todoID
+
+	data, err := io.ReadAll(r.Body)
+	if err != nil {
+		sh.options.RequestErrorHandlerFunc(w, r, fmt.Errorf("can't read body: %w", err))
+		return
+	}
+	if len(data) > 0 {
+		body := PutTodosTodoIDStateTextRequestBody(data)
+		request.Body = &body
+	}
+
+	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
+		return sh.ssi.PutTodosTodoIDState(ctx, request.(PutTodosTodoIDStateRequestObject))
+	}
+	for _, middleware := range sh.middlewares {
+		handler = middleware(handler, "PutTodosTodoIDState")
+	}
+
+	response, err := handler(r.Context(), w, r, request)
+
+	if err != nil {
+		sh.options.ResponseErrorHandlerFunc(w, r, err)
+	} else if validResponse, ok := response.(PutTodosTodoIDStateResponseObject); ok {
+		if err := validResponse.VisitPutTodosTodoIDStateResponse(w); err != nil {
 			sh.options.ResponseErrorHandlerFunc(w, r, err)
 		}
 	} else if response != nil {
