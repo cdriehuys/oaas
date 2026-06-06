@@ -1,10 +1,11 @@
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import { heyApiPlugin } from '@hey-api/vite-plugin';
+import tailwindCSS from '@tailwindcss/vite';
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), heyApiPlugin({
+  plugins: [react(), tailwindCSS(), heyApiPlugin({
     config: {
       input: '../openapi.yaml',
       output: './src/client',
