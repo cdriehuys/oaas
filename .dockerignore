@@ -1,6 +1,7 @@
 .devcontainer
 .vscode
 build
+node_modules
 tmp
 
 *.sqlite

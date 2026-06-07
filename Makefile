@@ -16,7 +16,7 @@ build-backend:
 
 .PHONY: dev
 dev:
-	mprocs "make dev-ui" "make dev-backend"
+	npx mprocs "make dev-ui" "make dev-backend"
 
 .PHONY: dev-backend
 dev-backend:

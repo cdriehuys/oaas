@@ -1,0 +1,7 @@
+build
+dist
+tmp
+
+# Auto-generated code
+frontend/src/client
+*.gen.ts

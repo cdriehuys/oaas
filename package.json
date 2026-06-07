@@ -1,0 +1,17 @@
+{
+  "name": "oaas",
+  "lint-staged": {
+    "**/*": [
+      "prettier --write --ignore-unknown"
+    ]
+  },
+  "scripts": {
+    "prepare": "husky"
+  },
+  "devDependencies": {
+    "husky": "^9.1.7",
+    "lint-staged": "^17.0.7",
+    "mprocs": "^0.9.6",
+    "prettier": "3.8.3"
+  }
+}

@@ -26,21 +26,21 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/TodoCollection'
+                $ref: "#/components/schemas/TodoCollection"
 
     post:
       requestBody:
         content:
           application/json:
             schema:
-              $ref: '#/components/schemas/NewTodo'
+              $ref: "#/components/schemas/NewTodo"
       responses:
         "201":
           description: Todo created
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Todo'
+                $ref: "#/components/schemas/Todo"
 
   /todos/{todoID}/state:
     parameters:
@@ -57,18 +57,18 @@ paths:
         content:
           text/plain:
             schema:
-              $ref: '#/components/schemas/TodoState'
+              $ref: "#/components/schemas/TodoState"
       responses:
         "200":
           description: State updated
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/Todo'
+                $ref: "#/components/schemas/Todo"
         "400":
-          $ref: '#/components/responses/BadRequest'
+          $ref: "#/components/responses/BadRequest"
         "404":
-          $ref: '#/components/responses/TodoNotFound'
+          $ref: "#/components/responses/TodoNotFound"
 
 components:
   schemas:
@@ -90,7 +90,7 @@ components:
         items:
           type: array
           items:
-            $ref: '#/components/schemas/Todo'
+            $ref: "#/components/schemas/Todo"
 
     Todo:
       type: object
@@ -135,12 +135,12 @@ components:
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorMessage'
+            $ref: "#/components/schemas/ErrorMessage"
     TodoNotFound:
       description: No todo found with the given ID
       content:
         application/json:
           schema:
-            $ref: '#/components/schemas/ErrorMessage'
+            $ref: "#/components/schemas/ErrorMessage"
           example:
             message: No todo with ID 7.

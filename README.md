@@ -28,7 +28,7 @@ open the project with the included dev container.
 Common development commands:
 
 | Command          | Purpose                                                                       |
-|------------------|-------------------------------------------------------------------------------|
+| ---------------- | ----------------------------------------------------------------------------- |
 | `make container` | Package the application into a container image                                |
 | `make run`       | Run a containerized version of the application                                |
 | `make dev`       | Start separate development servers for the UI and backend with live-reloading |
@@ -38,6 +38,6 @@ All available commands can be found in the `Makefile`.
 ### URLs
 
 | Target                      | URL                   |
-|-----------------------------|-----------------------|
+| --------------------------- | --------------------- |
 | Application                 | http://localhost:8000 |
 | Standalone UI (development) | http://localhost:5173 |

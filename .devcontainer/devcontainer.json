@@ -1,12 +1,17 @@
 // For format details, see https://aka.ms/devcontainer.json. For config options, see the
 // README at: https://github.com/devcontainers/templates/tree/main/src/go .
 {
-	"name": "Go",
-	"build": {
-		"dockerfile": "Dockerfile"
-	},
-	"features": {
-		"ghcr.io/devcontainers/features/node:2": {"version": "lts"}
-	},
-	"postCreateCommand": "npm install --global mprocs"
+  "name": "Go",
+  "build": {
+    "dockerfile": "Dockerfile"
+  },
+  "features": {
+    "ghcr.io/devcontainers/features/node:2": { "version": "lts" }
+  },
+  "customizations": {
+    "vscode": {
+      "extensions": ["esbenp.prettier-vscode"]
+    }
+  },
+  "postCreateCommand": "npm install && cd frontend && npm install"
 }
