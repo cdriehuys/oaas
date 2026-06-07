@@ -1,12 +1,13 @@
 # Overengineering as a Service (OaaS)
 
-An overengineered web application that always ships as a single container.
+An overengineered todo application that always ships as a single container.
 
-## Roadmap
+## Features
 
-- [ ] Some sort of web server
-- [ ] SPA UI
-- [ ] More things
+- Go API
+- React frontend
+- API endpoints and client generated from Open API spec
+- Live reloading of API and UI during development
 
 ## Development
 
