@@ -52,7 +52,7 @@ func (r *SQLiteTodoRepo) CreateTodo(ctx context.Context, title string) (Todo, er
 }
 
 func (r *SQLiteTodoRepo) GetComplete(ctx context.Context) ([]Todo, error) {
-	query := `SELECT id, title, completed_at FROM todos WHERE completed_at IS NOT NULL ORDER BY created_at DESC`
+	query := `SELECT id, title, completed_at FROM todos WHERE completed_at IS NOT NULL ORDER BY completed_at DESC`
 
 	rows, err := r.db.QueryContext(ctx, query)
 	if err != nil {

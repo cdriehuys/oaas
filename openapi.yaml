@@ -9,6 +9,17 @@ servers:
 paths:
   /todos:
     get:
+      parameters:
+        - in: query
+          name: state
+          required: false
+          schema:
+            type: string
+            enum:
+              - complete
+              - incomplete
+            default: incomplete
+
       responses:
         "200":
           description: Todo collection

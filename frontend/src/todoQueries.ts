@@ -3,10 +3,11 @@ import { getTodos } from "./client";
 
 export const todoQueryKeys = {
     all: ['todos'] as const,
-    list: () => [todoQueryKeys.all, 'list'] as const,
+    lists: () => [...todoQueryKeys.all, 'lists'] as const,
+    listByState: (state: string) => [...todoQueryKeys.lists(), state] as const,
 };
 
-export const useTodos = () => useQuery({
-    queryKey: todoQueryKeys.list(),
-    queryFn: () => getTodos<true>()
+export const useTodos = (state: 'complete' | 'incomplete') => useQuery({
+    queryKey: todoQueryKeys.listByState(state),
+    queryFn: () => getTodos<true>({ query: { state }})
 });

@@ -25,7 +25,16 @@ func NewServer(todos todoRepo) *Server {
 }
 
 func (s *Server) GetTodos(ctx context.Context, req GetTodosRequestObject) (GetTodosResponseObject, error) {
-	todos, err := s.todos.GetIncomplete(ctx)
+	showComplete := *req.Params.State == GetTodosParamsStateComplete
+
+	var todos []repositories.Todo
+	var err error
+	if showComplete {
+		todos, err = s.todos.GetComplete(ctx)
+	} else {
+		todos, err = s.todos.GetIncomplete(ctx)
+	}
+
 	if err != nil {
 		return nil, fmt.Errorf("retrieving todos: %v", err)
 	}
@@ -49,7 +58,7 @@ func (s *Server) PutTodosTodoIDState(ctx context.Context, req PutTodosTodoIDStat
 
 	var todo repositories.Todo
 	var err error
-	if *req.Body == Complete {
+	if *req.Body == TodoStateComplete {
 		todo, err = s.todos.SetComplete(ctx, req.TodoID)
 	} else {
 		todo, err = s.todos.SetIncomplete(ctx, req.TodoID)

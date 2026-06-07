@@ -7,7 +7,8 @@ function App() {
 
   return (
     <QueryClientProvider client={client}>
-      <TodoList />
+      <TodoList state="incomplete" title='Todo List' />
+      <TodoList state="complete" title="Done" />
     </QueryClientProvider>
   )
 }

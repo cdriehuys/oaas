@@ -20,16 +20,34 @@ import (
 
 // Defines values for TodoState.
 const (
-	Complete   TodoState = "complete"
-	Incomplete TodoState = "incomplete"
+	TodoStateComplete   TodoState = "complete"
+	TodoStateIncomplete TodoState = "incomplete"
 )
 
 // Valid indicates whether the value is a known member of the TodoState enum.
 func (e TodoState) Valid() bool {
 	switch e {
-	case Complete:
+	case TodoStateComplete:
 		return true
-	case Incomplete:
+	case TodoStateIncomplete:
+		return true
+	default:
+		return false
+	}
+}
+
+// Defines values for GetTodosParamsState.
+const (
+	GetTodosParamsStateComplete   GetTodosParamsState = "complete"
+	GetTodosParamsStateIncomplete GetTodosParamsState = "incomplete"
+)
+
+// Valid indicates whether the value is a known member of the GetTodosParamsState enum.
+func (e GetTodosParamsState) Valid() bool {
+	switch e {
+	case GetTodosParamsStateComplete:
+		return true
+	case GetTodosParamsStateIncomplete:
 		return true
 	default:
 		return false
@@ -74,6 +92,14 @@ type BadRequest = ErrorMessage
 // TodoNotFound defines model for TodoNotFound.
 type TodoNotFound = ErrorMessage
 
+// GetTodosParams defines parameters for GetTodos.
+type GetTodosParams struct {
+	State *GetTodosParamsState `form:"state,omitempty" json:"state,omitempty"`
+}
+
+// GetTodosParamsState defines parameters for GetTodos.
+type GetTodosParamsState string
+
 // PostTodosJSONRequestBody defines body for PostTodos for application/json ContentType.
 type PostTodosJSONRequestBody = NewTodo
 
@@ -84,7 +110,7 @@ type PutTodosTodoIDStateTextRequestBody = TodoState
 type ServerInterface interface {
 
 	// (GET /todos)
-	GetTodos(w http.ResponseWriter, r *http.Request)
+	GetTodos(w http.ResponseWriter, r *http.Request, params GetTodosParams)
 
 	// (POST /todos)
 	PostTodos(w http.ResponseWriter, r *http.Request)
@@ -105,8 +131,27 @@ type MiddlewareFunc func(http.Handler) http.Handler
 // GetTodos operation middleware
 func (siw *ServerInterfaceWrapper) GetTodos(w http.ResponseWriter, r *http.Request) {
 
+	var err error
+	_ = err
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params GetTodosParams
+
+	// ------------- Optional query parameter "state" -------------
+
+	err = runtime.BindQueryParameterWithOptions("form", true, false, "state", r.URL.Query(), &params.State, runtime.BindQueryParameterOptions{Type: "string", Format: ""})
+	if err != nil {
+		var requiredError *runtime.RequiredParameterError
+		if errors.As(err, &requiredError) {
+			siw.ErrorHandlerFunc(w, r, &RequiredParamError{ParamName: "state"})
+		} else {
+			siw.ErrorHandlerFunc(w, r, &InvalidParamFormatError{ParamName: "state", Err: err})
+		}
+		return
+	}
+
 	handler := http.Handler(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		siw.Handler.GetTodos(w, r)
+		siw.Handler.GetTodos(w, r, params)
 	}))
 
 	for _, middleware := range siw.HandlerMiddlewares {
@@ -288,6 +333,7 @@ type BadRequestJSONResponse ErrorMessage
 type TodoNotFoundJSONResponse ErrorMessage
 
 type GetTodosRequestObject struct {
+	Params GetTodosParams
 }
 
 type GetTodosResponseObject interface {
@@ -424,8 +470,10 @@ type strictHandler struct {
 }
 
 // GetTodos operation middleware
-func (sh *strictHandler) GetTodos(w http.ResponseWriter, r *http.Request) {
+func (sh *strictHandler) GetTodos(w http.ResponseWriter, r *http.Request, params GetTodosParams) {
 	var request GetTodosRequestObject
+
+	request.Params = params
 
 	handler := func(ctx context.Context, w http.ResponseWriter, r *http.Request, request interface{}) (interface{}, error) {
 		return sh.ssi.GetTodos(ctx, request.(GetTodosRequestObject))
