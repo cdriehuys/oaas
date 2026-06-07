@@ -5,8 +5,9 @@ COPY ./frontend/package.json ./frontend/package-lock.json ./
 RUN --mount=type=cache,target=/root/.npm \
     npm ci
 
+COPY ./openapi.yaml ../
 COPY ./frontend/ ./
-RUN npm run build
+RUN npm run build:prod
 
 FROM golang:1.26.3-trixie AS app-builder
 

@@ -1,7 +1,12 @@
 .devcontainer
 .vscode
 build
+dist
 node_modules
 tmp
-
 *.sqlite
+
+# Auto-generated files
+frontend/src/client
+*.gen.go
+*.gen.ts
