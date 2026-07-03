@@ -60,10 +60,37 @@ type ErrorMessage struct {
 	Message string `json:"message"`
 }
 
+// FieldError defines model for FieldError.
+type FieldError struct {
+	// Code A unique code for the error type.
+	Code string `json:"code"`
+
+	// Field The field the error is associated with.
+	Field string `json:"field"`
+
+	// Title A human-readable summary of the error.
+	Title string `json:"title"`
+}
+
 // NewTodo defines model for NewTodo.
 type NewTodo struct {
 	// Title Title of the todo
 	Title string `json:"title"`
+}
+
+// ProblemDetails defines model for ProblemDetails.
+type ProblemDetails struct {
+	// Detail A human-readable explanation specific to this occurrence of the problem.
+	Detail *string `json:"detail,omitempty"`
+
+	// FieldErrors Errors associated with specific fields of the request.
+	FieldErrors *[]FieldError `json:"fieldErrors,omitempty"`
+
+	// Title A short, human-readable summary of the problem type.
+	Title *string `json:"title,omitempty"`
+
+	// Type A URI reference that identifies the problem type.
+	Type *string `json:"type,omitempty"`
 }
 
 // Todo defines model for Todo.
@@ -87,7 +114,7 @@ type TodoCollection struct {
 type TodoState string
 
 // BadRequest defines model for BadRequest.
-type BadRequest = ErrorMessage
+type BadRequest = ProblemDetails
 
 // TodoNotFound defines model for TodoNotFound.
 type TodoNotFound = ErrorMessage
@@ -328,7 +355,7 @@ func HandlerWithOptions(si ServerInterface, options StdHTTPServerOptions) http.H
 	return m
 }
 
-type BadRequestJSONResponse ErrorMessage
+type BadRequestApplicationProblemPlusJSONResponse ProblemDetails
 
 type TodoNotFoundJSONResponse ErrorMessage
 
@@ -376,6 +403,22 @@ func (response PostTodos201JSONResponse) VisitPostTodosResponse(w http.ResponseW
 	return err
 }
 
+type PostTodos400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
+
+func (response PostTodos400ApplicationProblemPlusJSONResponse) VisitPostTodosResponse(w http.ResponseWriter) error {
+
+	var buf bytes.Buffer
+	if err := json.NewEncoder(&buf).Encode(response); err != nil {
+		return err
+	}
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(400)
+	_, err := buf.WriteTo(w)
+	return err
+}
+
 type PutTodosTodoIDStateRequestObject struct {
 	TodoID int `json:"todoID"`
 	Body   *PutTodosTodoIDStateTextRequestBody
@@ -399,15 +442,17 @@ func (response PutTodosTodoIDState200JSONResponse) VisitPutTodosTodoIDStateRespo
 	return err
 }
 
-type PutTodosTodoIDState400JSONResponse struct{ BadRequestJSONResponse }
+type PutTodosTodoIDState400ApplicationProblemPlusJSONResponse struct {
+	BadRequestApplicationProblemPlusJSONResponse
+}
 
-func (response PutTodosTodoIDState400JSONResponse) VisitPutTodosTodoIDStateResponse(w http.ResponseWriter) error {
+func (response PutTodosTodoIDState400ApplicationProblemPlusJSONResponse) VisitPutTodosTodoIDStateResponse(w http.ResponseWriter) error {
 
 	var buf bytes.Buffer
 	if err := json.NewEncoder(&buf).Encode(response); err != nil {
 		return err
 	}
-	w.Header().Set("Content-Type", "application/json")
+	w.Header().Set("Content-Type", "application/problem+json")
 	w.WriteHeader(400)
 	_, err := buf.WriteTo(w)
 	return err

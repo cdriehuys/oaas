@@ -6,7 +6,10 @@ import (
 	"fmt"
 
 	"github.com/cdriehuys/oaas/api/internal/repositories"
+	validation "github.com/go-ozzo/ozzo-validation/v4"
 )
+
+const probTypeValidationError string = "/probs/validation-error"
 
 type todoRepo interface {
 	CreateTodo(ctx context.Context, title string) (repositories.Todo, error)
@@ -42,7 +45,21 @@ func (s *Server) GetTodos(ctx context.Context, req GetTodosRequestObject) (GetTo
 	return GetTodos200JSONResponse(todoCollectionToRep(todos)), nil
 }
 
+func (t *PostTodosJSONRequestBody) Validate() error {
+	return validation.ValidateStruct(t,
+		validation.Field(&t.Title, validation.Required, validation.Length(1, 100)),
+	)
+}
+
 func (s *Server) PostTodos(ctx context.Context, req PostTodosRequestObject) (PostTodosResponseObject, error) {
+	if err := req.Body.Validate(); err != nil {
+		if resp, ok := asValidationError(err); ok {
+			return PostTodos400ApplicationProblemPlusJSONResponse{resp}, nil
+		}
+
+		return nil, fmt.Errorf("validating todo: %v", err)
+	}
+
 	created, err := s.todos.CreateTodo(ctx, req.Body.Title)
 	if err != nil {
 		return nil, fmt.Errorf("creating todo: %v", err)
@@ -53,7 +70,17 @@ func (s *Server) PostTodos(ctx context.Context, req PostTodosRequestObject) (Pos
 
 func (s *Server) PutTodosTodoIDState(ctx context.Context, req PutTodosTodoIDStateRequestObject) (PutTodosTodoIDStateResponseObject, error) {
 	if !req.Body.Valid() {
-		return PutTodosTodoIDState400JSONResponse{BadRequestJSONResponse{Message: fmt.Sprintf("Invalid state %q.", *req.Body)}}, nil
+		errType := "/probs/invalid-state"
+		title := "Invalid State"
+		detail := fmt.Sprintf("The state %q is invalid.", *req.Body)
+
+		return PutTodosTodoIDState400ApplicationProblemPlusJSONResponse{
+			BadRequestApplicationProblemPlusJSONResponse{
+				Type:   &errType,
+				Title:  &title,
+				Detail: &detail,
+			},
+		}, nil
 	}
 
 	var todo repositories.Todo
@@ -90,4 +117,31 @@ func todoCollectionToRep(todos []repositories.Todo) TodoCollection {
 	}
 
 	return TodoCollection{Items: reps}
+}
+
+func asValidationError(err error) (BadRequestApplicationProblemPlusJSONResponse, bool) {
+	if vErr, ok := errors.AsType[validation.Errors](err); ok {
+		return validationErrorToResponse(vErr), true
+	}
+
+	return BadRequestApplicationProblemPlusJSONResponse{}, false
+}
+
+func validationErrorToResponse(errs validation.Errors) BadRequestApplicationProblemPlusJSONResponse {
+	var fieldErrors []FieldError
+	for field, err := range errs {
+		code := err.(validation.Error).Code()
+		title := err.Error()
+
+		fieldErrors = append(fieldErrors, FieldError{code, field, title})
+	}
+
+	errType := probTypeValidationError
+	title := "Bad Request"
+
+	return BadRequestApplicationProblemPlusJSONResponse{
+		Type:        &errType,
+		Title:       &title,
+		FieldErrors: &fieldErrors,
+	}
 }

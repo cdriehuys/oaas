@@ -34,6 +34,9 @@ DELVE_OPTS := $(if $(WAIT_FOR_DEBUGGER),,--continue)
 
 .PHONY: run-backend
 run-backend:
+	# Subsequent reloads cause delve to still be running and bound to port 2345.
+	# A short delay lets it exit between runs.
+	sleep 1
 	dlv exec ./build/main --listen=127.0.0.1:2345 --headless=true --api-version=2 --accept-multiclient $(DELVE_OPTS)
 
 .PHONY: api-server

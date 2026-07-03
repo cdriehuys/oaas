@@ -3,4 +3,4 @@
 [build]
   full_bin = "make run-backend"
   cmd = "make build-backend BUILD_TAGS=no_ui"
-  exclude_dir = ["frontend"]
+  exclude_dir = ["frontend", "node_modules"]

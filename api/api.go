@@ -2,7 +2,9 @@ package api
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
+	"log"
 	"net/http"
 	"strings"
 
@@ -30,8 +32,39 @@ func NewAPI(ctx context.Context, baseURL string, database string) (*API, error) 
 	return api, nil
 }
 
+func handleRequestError(w http.ResponseWriter, r *http.Request, err error) {
+	errType := "/probs/bad-request"
+	title := "Bad Request"
+	details := err.Error()
+
+	rep := server.ProblemDetails{Type: &errType, Title: &title, Detail: &details}
+
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(http.StatusBadRequest)
+
+	json.NewEncoder(w).Encode(rep)
+}
+
+func handleResponseError(w http.ResponseWriter, r *http.Request, err error) {
+	log.Println("Unexpected server error:", err)
+
+	errType := "/probs/server-error"
+	title := http.StatusText(http.StatusInternalServerError)
+
+	rep := server.ProblemDetails{Type: &errType, Title: &title}
+
+	w.Header().Set("Content-Type", "application/problem+json")
+	w.WriteHeader(http.StatusInternalServerError)
+
+	json.NewEncoder(w).Encode(rep)
+}
+
 func (a *API) Routes() http.Handler {
-	strictHandler := server.NewStrictHandler(a.server, nil)
+	strictHandler := server.NewStrictHandlerWithOptions(a.server, nil, server.StrictHTTPServerOptions{
+		RequestErrorHandlerFunc:  handleRequestError,
+		ResponseErrorHandlerFunc: handleResponseError,
+	})
+
 	mux := http.NewServeMux()
 
 	return server.HandlerFromMuxWithBaseURL(strictHandler, mux, a.baseURL)
